@@ -15,6 +15,10 @@ Ideas:
 #define TORCH_DRV_UP    10
 #define TORCH_DRV_DWN   11
 
+//Lotos Connector
+#define PLASMA_START	12
+#define PLASMA_OK   	13
+
 //state definitions
 #define IDLE    0
 #define PIERCE  1
@@ -22,7 +26,9 @@ Ideas:
 #define RETRACT 3
 int state=0;
 
-unsigned long TORCH_RETRACT_TIME = 500;
+unsigned long TORCH_RETRACT_TIME = 500; //Retract after touch
+unsigned long ARC_TIMEOUT = 2000;		//Time to wait for plasma OK signal
+unsigned long arcBegin = 0;				//When the arc was lit
 
 void setup(){
   Serial.begin(115200);
@@ -47,10 +53,14 @@ void loop(){
     digitalWrite(FEED_HOLD,1);          //Pause machine motion, may need a dwell here
     digitalWrite(TORCH_DRV_DWN,1);
     while( !digitalRead(TORCH_BUMP) ){ }  //Leave motor running until we see a limit switch
-    digitalWrite(TORCH_DRV_DWN,0);
+    digitalWrite(TORCH_DRV_DWN, 0);
     digitalWrite(TORCH_DRV_UP,1);
+	while( digitalRead(TORCH_BUMP) ){  }  //Retract until the switch releases
     delay(TORCH_RETRACT_TIME);
     digitalWrite(TORCH_DRV_UP,0);       //How is the torch being "lit"?
+	digitalWrite(PLASMA_START,1);
+	arcBegin=millis();
+	while( (millis()-arcBegin < ARC_TIMEOUT) && !digitalRead(PLASMA_OK) ){	}
     digitalWrite(FEED_HOLD,0);          //Release machine hold, shouldn't move until it sees START
     digitalWrite(START,1);              //Resume motion
     delayMicroseconds(100);                   //Debounce, extend as necessary
