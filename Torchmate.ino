@@ -9,13 +9,13 @@ Ideas:
 #define SPINDLE   4
 
 //inputs from torch
-#define TORCH_UP_SIG    7
-#define TORCH_DWN_SIG   8
-#define TORCH_BUMP      9
-#define TORCH_DRV_UP    10
-#define TORCH_DRV_DWN   11
-#define TORCH_DWN_LMT   12
-#define TORCH_UP_LMT    13
+int TORCH_UP_SIG=    7;
+int TORCH_DWN_SIG=   8;
+int TORCH_BUMP=      9;
+int TORCH_DRV_UP=    10;
+int TORCH_DRV_DWN=   11;
+int TORCH_DWN_LMT=   12;
+int TORCH_UP_LMT =   13;
 
 
 //Lotos Connector
@@ -49,17 +49,21 @@ void setup(){
   digitalWrite(TORCH_DRV_DWN,1);
   pinMode(TORCH_UP_LMT, INPUT);
   pinMode(TORCH_DWN_LMT, INPUT);
-  delay(10000);
-  digitalWrite(TORCH_DRV_DWN,0);
+  digitalWrite(TORCH_DRV_UP,0);
+  delay(10);
   while(!digitalRead(TORCH_UP_LMT)){
     Serial.println(digitalRead(TORCH_UP_LMT));
   }
-  digitalWrite(TORCH_DRV_DWN,1);
+  digitalWrite(TORCH_DRV_UP,1);
 }
 
 void loop(){
+  Serial.println("Idle");
   while(state==IDLE){
-    if( digitalRead(SPINDLE) ){ state=PIERCE; }  
+    if( !digitalRead(SPINDLE) ){ 
+      state=PIERCE; 
+      Serial.println("Piercing...");
+    }  
   }
   
   while(state==PIERCE){
