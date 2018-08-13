@@ -14,10 +14,13 @@ Ideas:
 #define TORCH_BUMP      9
 #define TORCH_DRV_UP    10
 #define TORCH_DRV_DWN   11
+#define TORCH_DWN_LMT   12
+#define TORCH_UP_LMT    13
+
 
 //Lotos Connector
-#define PLASMA_START	12
-#define PLASMA_OK   	13
+#define PLASMA_START	A0
+#define PLASMA_OK   	A1
 
 //state definitions
 #define IDLE    0
@@ -41,7 +44,17 @@ void setup(){
   pinMode(TORCH_DWN_SIG, INPUT_PULLUP);
   pinMode(TORCH_BUMP, INPUT_PULLUP);
   pinMode(TORCH_DRV_UP, OUTPUT);
+  digitalWrite(TORCH_DRV_UP,1);
   pinMode(TORCH_DRV_DWN, OUTPUT);
+  digitalWrite(TORCH_DRV_DWN,1);
+  pinMode(TORCH_UP_LMT, INPUT);
+  pinMode(TORCH_DWN_LMT, INPUT);
+  delay(10000);
+  digitalWrite(TORCH_DRV_DWN,0);
+  while(!digitalRead(TORCH_UP_LMT)){
+    Serial.println(digitalRead(TORCH_UP_LMT));
+  }
+  digitalWrite(TORCH_DRV_DWN,1);
 }
 
 void loop(){
