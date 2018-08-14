@@ -19,8 +19,8 @@ int TORCH_UP_LMT =   13;
 
 
 //Lotos Connector
-#define PLASMA_START	A0
-#define PLASMA_OK   	A1
+int PLASMA_START =	5;
+int PLASMA_OK =   	6;
 
 //state definitions
 #define IDLE    0
@@ -40,9 +40,9 @@ void setup(){
   pinMode(FEED_HOLD, OUTPUT);
   pinMode(START, OUTPUT);
   pinMode(SPINDLE, INPUT_PULLUP);
-  pinMode(TORCH_UP_SIG, INPUT_PULLUP);
-  pinMode(TORCH_DWN_SIG, INPUT_PULLUP);
-  pinMode(TORCH_BUMP, INPUT_PULLUP);
+  pinMode(TORCH_UP_SIG, INPUT);
+  pinMode(TORCH_DWN_SIG, INPUT);
+  pinMode(TORCH_BUMP, INPUT);
   pinMode(TORCH_DRV_UP, OUTPUT);
   digitalWrite(TORCH_DRV_UP,1);
   pinMode(TORCH_DRV_DWN, OUTPUT);
@@ -50,7 +50,7 @@ void setup(){
   pinMode(TORCH_UP_LMT, INPUT);
   pinMode(TORCH_DWN_LMT, INPUT);
   digitalWrite(TORCH_DRV_UP,0);
-  delay(10);
+  delay(1);
   while(!digitalRead(TORCH_UP_LMT)){
     Serial.println(digitalRead(TORCH_UP_LMT));
   }
@@ -60,7 +60,7 @@ void setup(){
 void loop(){
   Serial.println("Idle");
   while(state==IDLE){
-    if( !digitalRead(SPINDLE) ){ 
+    if( digitalRead(SPINDLE) ){ 
       state=PIERCE; 
       Serial.println("Piercing...");
     }  
@@ -68,16 +68,24 @@ void loop(){
   
   while(state==PIERCE){
     digitalWrite(FEED_HOLD,1);          //Pause machine motion, may need a dwell here
-    digitalWrite(TORCH_DRV_DWN,1);
+    digitalWrite(TORCH_DRV_DWN,0);
     while( !digitalRead(TORCH_BUMP) ){ }  //Leave motor running until we see a limit switch
-    digitalWrite(TORCH_DRV_DWN, 0);
-    digitalWrite(TORCH_DRV_UP,1);
-	while( digitalRead(TORCH_BUMP) ){  }  //Retract until the switch releases
+    digitalWrite(TORCH_DRV_DWN, 1);
+    digitalWrite(TORCH_DRV_UP,0);
+	  while( digitalRead(TORCH_BUMP) ){  }  //Retract until the switch releases
     delay(TORCH_RETRACT_TIME);
-    digitalWrite(TORCH_DRV_UP,0);       //How is the torch being "lit"?
-	digitalWrite(PLASMA_START,1);
-	arcBegin=millis();
-	while( (millis()-arcBegin < ARC_TIMEOUT) && !digitalRead(PLASMA_OK) ){	}
+    digitalWrite(TORCH_DRV_UP,1);       //How is the torch being "lit"?
+    digitalWrite(PLASMA_START,0);
+    arcBegin=millis();
+    Serial.println("Arc ignition");
+    while( !digitalRead(PLASMA_OK) ){
+      if(millis()-arcBegin > ARC_TIMEOUT){
+        Serial.println("Arc Timeout reached");
+        state=RETRACT;
+        break;
+      }
+  	}
+    if(state==RETRACT){ break; }
     digitalWrite(FEED_HOLD,0);          //Release machine hold, shouldn't move until it sees START
     digitalWrite(START,1);              //Resume motion
     delayMicroseconds(100);                   //Debounce, extend as necessary
@@ -85,31 +93,33 @@ void loop(){
     state=CUTTING;
   }
 
+  Serial.println("CUTTING...");
   while(state==CUTTING){
     if( digitalRead(TORCH_UP_SIG) ){
-      digitalWrite(TORCH_DRV_UP,1);
-      while( digitalRead(TORCH_UP_SIG) && !digitalRead(SPINDLE) ){  }  
       digitalWrite(TORCH_DRV_UP,0);
+      while( digitalRead(TORCH_UP_SIG) && digitalRead(SPINDLE) ){  }  
+      digitalWrite(TORCH_DRV_UP,1);
     }
     if( digitalRead(TORCH_DWN_SIG) ){
-      digitalWrite(TORCH_DRV_DWN,1);
-      while(digitalRead(TORCH_UP_SIG) && !digitalRead(TORCH_BUMP) && !digitalRead(SPINDLE) ){  }  
       digitalWrite(TORCH_DRV_DWN,0);
+      while(digitalRead(TORCH_UP_SIG) && !digitalRead(TORCH_BUMP) && digitalRead(SPINDLE) ){  }  
+      digitalWrite(TORCH_DRV_DWN,1);
       if(digitalRead(TORCH_BUMP) ){
         //handle torch hard limit
       }
     }
-    if( !digitalRead(SPINDLE) ){
+    if( digitalRead(SPINDLE) ){
       state=RETRACT;
     }
   }
-  
+  Serial.println("RETRACT...");
   while(state==RETRACT){
     //Turn of torch?
     digitalWrite(FEED_HOLD,1);          //Pause machine motion, may need a dwell here
-    digitalWrite(TORCH_DRV_UP,1);
-    while( !digitalRead(TORCH_BUMP) ){ }  //Leave motor running until we see a limit switch
     digitalWrite(TORCH_DRV_UP,0);
+    delay(1);
+    while( !digitalRead(TORCH_UP_LMT) ){ }  //Leave motor running until we see a limit switch
+    digitalWrite(TORCH_DRV_UP,1);
     digitalWrite(FEED_HOLD,0);          //Release machine hold, shouldn't move until it sees START
     digitalWrite(START,1);              //Resume motion
     delayMicroseconds(100);                   //Debounce, extend as necessary
