@@ -33,6 +33,7 @@ int state=0;
 unsigned long TORCH_RETRACT_TIME = 500; //Retract after touch
 unsigned long ARC_TIMEOUT = 5000;		//Time to wait for plasma OK signal
 unsigned long arcBegin = 0;				//When the arc was lit
+unsigned long torch_pierce_delay = 5000;				//Wait after arc lit
 
 void setup(){
   Serial.begin(115200);
@@ -94,6 +95,7 @@ void loop(){
     while( 1 ){
       if(!digitalRead(PLASMA_OK)){
         Serial.println("Arc lit");
+        delay(torch_pierce_delay);
         break;
       }
       if(millis()-arcBegin > ARC_TIMEOUT){
@@ -116,13 +118,16 @@ void loop(){
     if( !digitalRead(TORCH_UP_SIG) ){
       Serial.println("Move up");
       digitalWrite(TORCH_DRV_UP,0);
-      while( !digitalRead(TORCH_UP_SIG) && digitalRead(SPINDLE) ){  }  
+      while( !digitalRead(TORCH_UP_SIG) && digitalRead(SPINDLE) ){ delay(100); }  
       digitalWrite(TORCH_DRV_UP,1);
     }
     if( !digitalRead(TORCH_DWN_SIG) ){
       Serial.println("Move down");
       digitalWrite(TORCH_DRV_DWN,0);
-      while(!digitalRead(TORCH_UP_SIG) && !digitalRead(TORCH_BUMP) && digitalRead(SPINDLE) ){  }  
+      while(!digitalRead(TORCH_DWN_SIG) && !digitalRead(TORCH_BUMP) && digitalRead(SPINDLE) ){ 
+        Serial.println("Moving down");
+        delay(100); 
+      }  
       digitalWrite(TORCH_DRV_DWN,1);
       if(digitalRead(TORCH_BUMP) ){
         //handle torch hard limit
