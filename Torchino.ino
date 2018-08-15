@@ -118,7 +118,7 @@ void loop(){
     if( !digitalRead(TORCH_UP_SIG) ){
       Serial.println("Move up");
       digitalWrite(TORCH_DRV_UP,0);
-      while( !digitalRead(TORCH_UP_SIG) && digitalRead(SPINDLE) ){ delay(100); }  
+      while( !digitalRead(TORCH_UP_SIG) && digitalRead(SPINDLE) ){ }  
       digitalWrite(TORCH_DRV_UP,1);
     }
     if( !digitalRead(TORCH_DWN_SIG) ){
@@ -126,7 +126,6 @@ void loop(){
       digitalWrite(TORCH_DRV_DWN,0);
       while(!digitalRead(TORCH_DWN_SIG) && !digitalRead(TORCH_BUMP) && digitalRead(SPINDLE) ){ 
         Serial.println("Moving down");
-        delay(100); 
       }  
       digitalWrite(TORCH_DRV_DWN,1);
       if(digitalRead(TORCH_BUMP) ){
