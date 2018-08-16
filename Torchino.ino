@@ -40,7 +40,9 @@ void setup(){
 
   //Configure pins
   pinMode(FEED_HOLD, OUTPUT);
+  digitalWrite(FEED_HOLD, 1);
   pinMode(START, OUTPUT);
+  digitalWrite(START, 1);
   pinMode(SPINDLE, INPUT);
   pinMode(TORCH_UP_SIG, INPUT_PULLUP);
   pinMode(TORCH_DWN_SIG, INPUT_PULLUP);
@@ -78,7 +80,7 @@ void loop(){
   }
   
   while(state==PIERCE){
-    digitalWrite(FEED_HOLD,1);          //Pause machine motion, may need a dwell here
+    digitalWrite(FEED_HOLD,0);          //Pause machine motion, may need a dwell here
     digitalWrite(TORCH_DRV_DWN,0);
     delay(10);//Noise debouncing
     while( !digitalRead(TORCH_BUMP) ){ }  //Leave motor running until we see a limit switch
@@ -106,11 +108,14 @@ void loop(){
       }
   	}
     if(state==ERROR){ break; }
-    digitalWrite(FEED_HOLD,0);          //Release machine hold, shouldn't move until it sees START
-    digitalWrite(START,1);              //Resume motion
-    delayMicroseconds(100);                   //Debounce, extend as necessary
-    digitalWrite(START,0);
+    digitalWrite(FEED_HOLD,1);          //Release machine hold, shouldn't move until it sees START
+    digitalWrite(START,0);              //Resume motion
+    delay(1000);                   //Debounce, extend as necessary
+    digitalWrite(START,1);
     state=CUTTING;
+    Serial.print("Waiting for SPINDLE input...");
+    while( !digitalRead(SPINDLE) ){ } //Wait for spindle to return after pause
+    Serial.print("Got SPINDLE");
   }
 
   Serial.println("CUTTING...");
@@ -146,15 +151,15 @@ void loop(){
   Serial.println("RETRACT...");
   while(state==RETRACT || state==ERROR){
     digitalWrite(PLASMA_START,1);       //Turn off torch
-    digitalWrite(FEED_HOLD,1);          //Pause machine motion, may need a dwell here
+    digitalWrite(FEED_HOLD,0);          //Pause machine motion, may need a dwell here
     digitalWrite(TORCH_DRV_UP,0);
     delay(1);
     while( !digitalRead(TORCH_UP_LMT) ){ }  //Leave motor running until we see a limit switch
     digitalWrite(TORCH_DRV_UP,1);
-    digitalWrite(FEED_HOLD,0);          //Release machine hold, shouldn't move until it sees START
-    digitalWrite(START,1);              //Resume motion
+    digitalWrite(FEED_HOLD,1);          //Release machine hold, shouldn't move until it sees START
+    digitalWrite(START,0);              //Resume motion
     delayMicroseconds(100);                   //Debounce, extend as necessary
-    digitalWrite(START,0);
+    digitalWrite(START,1);
     if(state==ERROR){ break; }
     state=IDLE;
   }
