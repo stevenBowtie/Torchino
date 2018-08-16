@@ -1,0 +1,9 @@
+Fix for torch start sequence:
+-start each cut with:
+  M3        //Start sequence
+  G4 P1     //Dwell
+  M3        //Re-enable spindle on resume
+  Gx Xx Yx  //Run coordinated G-code
+
+Tools > Options > Sender options >
+  "Enable single step mode" must be set to prevent errors when the pause signal is sent.
